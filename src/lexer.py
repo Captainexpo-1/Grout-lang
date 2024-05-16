@@ -72,30 +72,3 @@ class Lexer:
 def tokenize(text):
     lexer = Lexer(text)
     return lexer.tokenize()
-
-if __name__ == "__main__":
-    t=tokenize(
-"""
-fn factorial -> int : int n {
-    if n == 0 {
-        return 1
-    }
-    return n * factorial : (n - 1)
-}
-
-
-fn main -> int : {
-    int n = 5
-    int result = factorial : (n)
-    print : ("Factorial of", n, "is", result)
-    return 0
-}
-
-main: ()
-"""
-    )
-    for i in t:
-        if i.type != token.TOKENTYPE.NEWLINE:
-            print(i,end=" ")
-        else:
-            print(end="\n")
