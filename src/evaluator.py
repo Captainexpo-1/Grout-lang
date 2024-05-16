@@ -227,14 +227,3 @@ class Evaluator:
 
     def visit_function_definition(self, node, env):
         env.set_function(node.name, node)
-
-# Example usage
-if __name__ == "__main__":
-    text = open(argv[1],'r').read()
-    t = Lexer(text).tokenize()
-    #print(t)
-    parser = Parser()
-    ast = parser.parse(t)
-    #print(ast)
-    evaluator = Evaluator()
-    evaluator.evaluate(ast)
