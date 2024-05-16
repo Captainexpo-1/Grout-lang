@@ -12,6 +12,7 @@ class TOKENTYPE:
     STRUCT_LITERAL = "STRUCT_LITERAL"
     WHILE = "WHILE"
     CREATE = "CREATE"
+    VOID = "VOID"
     # Special characters
     LPAREN = "LPAREN"
     RPAREN = "RPAREN"
@@ -41,6 +42,8 @@ class TOKENTYPE:
     AND = "AND"
     OR = "OR"
     FOR = "FOR"
+    ARROW = "ARROW"
+
 
 
     # Data types
@@ -76,6 +79,7 @@ TOKEN_RULES = {
     TOKENTYPE.STRUCT: r"struct",
     TOKENTYPE.WHILE: r"while",
     TOKENTYPE.CREATE: r"create",
+    TOKENTYPE.VOID: r"void",
     # Special characters
     TOKENTYPE.GREATER: r">",
     TOKENTYPE.LESS: r"<",
@@ -85,6 +89,7 @@ TOKEN_RULES = {
     TOKENTYPE.NOT_EQUAL: r"!=",
     TOKENTYPE.AND: r"&&",
     TOKENTYPE.OR: r"\|\|",
+    TOKENTYPE.ARROW: r"->",
 
     TOKENTYPE.NAME: r"[_a-zA-Z][_a-zA-Z0-9]*",
     TOKENTYPE.LPAREN: r"\(",
@@ -139,6 +144,7 @@ TOKEN_PRIORITY = [
     TOKENTYPE.STRUCT,
     TOKENTYPE.WHILE,
     TOKENTYPE.CREATE,
+    TOKENTYPE.VOID,
     
     # Literals
     TOKENTYPE.FLOAT_LITERAL,
@@ -163,7 +169,7 @@ TOKEN_PRIORITY = [
     TOKENTYPE.NOT_EQUAL,
     TOKENTYPE.GREATER,
     TOKENTYPE.LESS,
-
+    TOKENTYPE.ARROW,
 
 
     TOKENTYPE.LPAREN,
@@ -202,7 +208,7 @@ DATA_TYPES = (
     TOKENTYPE.BOOL,
     TOKENTYPE.LIST,
     TOKENTYPE.STRUCT,
-
+    TOKENTYPE.VOID
 )
 
 ATOMS = (
@@ -212,7 +218,7 @@ ATOMS = (
     TOKENTYPE.BOOL_LITERAL,
     TOKENTYPE.NAME,
     TOKENTYPE.LPAREN,
-
+    TOKENTYPE.NULL
 )
 
 

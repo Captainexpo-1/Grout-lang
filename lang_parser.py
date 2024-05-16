@@ -2,22 +2,24 @@ import tokens as token
 from tokens import TOKENTYPE
 from lexer import Lexer
 import std
-from parserOptions import ORDER_OF_OPERATIONS
 from parserNode import *
-
-import tokens as token
-from lexer import Lexer
-import std
-from parserOptions import ORDER_OF_OPERATIONS, TOKEN_TO_DATA_TYPE_MAP
-from parserNode import *
+from parserOptions import ORDER_OF_OPERATIONS, TOKEN_TO_DATA_TYPE_MAP, UNARY_OPERATORS
 from sys import argv
 class Parser:
     def __init__(self):
         self.tokens = []
         self.ast = []
         self.current = 0
+        self.function_returns = {
+            "print": "void",
+            "input": "string"
+        }
+        self.variable_types = {
+
+        }
 
     def throwError(self, message):
+        #print("Lookahead", self.curToken(), self.peek(), self.peek(2))
         raise std.LangError(message)
 
     def peek(self, a=1) -> token.Token:
@@ -58,23 +60,19 @@ class Parser:
             if parsed == None:
                 break
             self.addNode(parsed)
-        return self.ast
+        return Program(self.ast)
 
 
     def parseNode(self):
-
         if self.curToken().type in token.DATA_TYPES:
             return self.parseVariableDeclaration()
-        elif self.curToken().type == TOKENTYPE.NAME:
-            return self.handleName()
+
         elif self.curToken().type == TOKENTYPE.FOR:
             return self.parseForStatement()
         elif self.curToken().type == TOKENTYPE.FUNCTION:
             return self.parseFunctionDefinition()
         elif self.curToken().type == TOKENTYPE.RETURN:
             return self.parseReturnStatement()
-        elif self.curToken().type in token.ATOMS:
-            return self.parseExpression()
         elif self.curToken().type == TOKENTYPE.IF:
             return self.parseIfStatement()
         elif self.curToken().type == TOKENTYPE.WHILE:
@@ -82,9 +80,17 @@ class Parser:
         elif self.curToken().type == TOKENTYPE.NEWLINE:
             self.eat(TOKENTYPE.NEWLINE)
             return self.parseNode()
+        elif self.curToken().type == TOKENTYPE.NAME:
+            return self.handleName()
+        elif self.curToken().type in token.ATOMS:
+            try:
+                return self.parseExpression()
+            except:
+                return self.parseNode()
+
         elif self.curToken().type == TOKENTYPE.EOF:
             return None
-        self.throwError(f"Unexpected token {self.curToken().type}")
+        self.throwError(f"Unexpected token {self.curToken().type} on line: {self.curToken().line} col: {self.curToken().column}")
     def parseMethodCall(self):
         """
         requires: curToken == TOKENTYPE.NAME
@@ -97,19 +103,24 @@ class Parser:
         return StructMethodCall(struct, func, args)
     def handleName(self):
         print("HANDLING NAME",self.curToken(),self.peek())
+        #print(self.curToken(),self.peek())
         if self.peek().type == TOKENTYPE.EQUAL :
+            #print("GOT VAR ASSIGN")
             return self.parseVariableAssignment()
+        elif self.peek().type in ORDER_OF_OPERATIONS.keys():
+            print("GOT EXPRESSION")
+            return self.parseExpression()
         elif self.peek().type == TOKENTYPE.COLON:
-            print("FUNC CALL")
+            #print("FUNC CALL")
             return self.parseFunctionCall()
         elif self.peek().type == TOKENTYPE.DOT and self.peek(3).type == TOKENTYPE.COLON:
-            print("METHOD CALL")
+            #print("METHOD CALL")
             return self.parseMethodCall()
         elif self.peek().type == TOKENTYPE.DOT:
-            print("STRUCT VARIABLE ASSIGNMENT")
+            #print("STRUCT VARIABLE ASSIGNMENT")
             return self.parseVariableAssignment()
         else:
-            self.throwError(f"Unexpected token {self.curToken().type}")
+            self.throwError(f"Unexpected token {self.curToken().type} on line: {self.curToken().line} col: {self.curToken().column}")
     def parseBlock(self):
 
         # Eat leading brace
@@ -140,37 +151,56 @@ class Parser:
         while self.curToken().type != TOKENTYPE.LBRACE:
             # Skip newline
             self.skipWhitespace()
-            params.append(self.eatAny([TOKENTYPE.NAME, TOKENTYPE.NULL]).value)
+            if self.curToken().type == TOKENTYPE.NULL: 
+                self.eat(TOKENTYPE.NULL)
+                params.append(TOKENTYPE.NULL.lower())
+                continue
+            datatype = self.parseDataType()
+            params.append(
+                Variable(
+                    self.eatAny([TOKENTYPE.NAME, TOKENTYPE.NULL]).value,
+                    datatype
+                )
+            )
+                
             if self.curToken().type == TOKENTYPE.COMMA: self.eat(TOKENTYPE.COMMA)
-        if len(params) == 1 and params[0] == TOKENTYPE.NULL.lower(): return []
+        if len(params) == 1 and params[0] == TOKENTYPE.NULL.lower(): 
+            return []
         return params
     def parseFunctionDefinition(self):
         self.eat(TOKENTYPE.FUNCTION)
+        #print("PARSING FUNCTION", self.curToken(), self.peek(), self.peek(2))
         name = self.eat(TOKENTYPE.NAME).value
+        #print("PARSING FUNCTION", self.curToken(), self.peek(), self.peek(2))
+        self.eat(TOKENTYPE.ARROW)
+        return_type = self.parseDataType()
+        self.function_returns[name] = return_type
         params = []
+
         if self.curToken().type == TOKENTYPE.COLON:
             self.eat(TOKENTYPE.COLON)
             params = self.parseFunctionParameters()
         body = self.parseBlock()
-        return FunctionDefinition(name, params, body)
+
+        return FunctionDefinition(name, params, return_type, body)
     def parseFunctionArgs(self):
+        self.eat(TOKENTYPE.LPAREN)
         params = []
-        while self.curToken().type != TOKENTYPE.NEWLINE:
-            try:
-                params.append(self.parseExpression())
-            except:
-                self.curToken().type == TOKENTYPE.NULL
-                params.append(TOKENTYPE.NULL.lower())
-                self.eat(TOKENTYPE.NULL)
-            if self.curToken().type == TOKENTYPE.COMMA: self.eat(TOKENTYPE.COMMA)
-        if len(params) == 1 and params[0] == TOKENTYPE.NULL.lower(): return []
+        while self.curToken().type != TOKENTYPE.RPAREN:
+            params.append(self.parseExpression())
+
+            if self.curToken().type == TOKENTYPE.COMMA: 
+                self.eat(TOKENTYPE.COMMA)
+            #print(params,self.peek(),self.curToken().type)
+        self.eat(TOKENTYPE.RPAREN)
+        #print("GOT OUT")
         return params
     def parseFunctionCall(self):
-        print("FUNC CALL")
-        name = self.eat(TOKENTYPE.NAME)
+        #print("FUNC CALL")
+        name = self.eat(TOKENTYPE.NAME).value
         self.eat(TOKENTYPE.COLON)
         args = self.parseFunctionArgs()
-        return FunctionCall(name, args)
+        return FunctionCall(name, self.function_returns[name], args)
         
     def parseReturnStatement(self):
         self.eat(TOKENTYPE.RETURN)
@@ -209,7 +239,7 @@ class Parser:
         elif self.curToken().type == TOKENTYPE.ELSE:
             else_block = self.parseElseStatement()
         
-        return IFStatement(condition, block, else_block)
+        return IfStatement(condition, block, else_block)
     
     def parseVariableAssignment(self):
         variable = self.eat(TOKENTYPE.NAME).value
@@ -220,7 +250,7 @@ class Parser:
             access = self.eat(TOKENTYPE.NAME).value
             variable = StructVariable(variable, access)
         else:
-            variable = Variable(variable)
+            variable = Variable(variable, self.variable_types[variable])
         self.eat(TOKENTYPE.EQUAL)
         expression = self.parseExpression()
         return Assignment(variable, expression)
@@ -234,22 +264,31 @@ class Parser:
     def parseVariableDeclaration(self):
         data_type = self.parseDataType()
         variable = self.curToken().value
-        variable = Variable(variable)
+        variable = Variable(variable, data_type)
         self.eat(TOKENTYPE.NAME)
         expression = None
         if self.curToken().type == TOKENTYPE.EQUAL:
             self.eat(TOKENTYPE.EQUAL)
             expression = self.parseExpression()
+        self.variable_types[variable.name] = data_type
         return VariableDeclaration(variable, data_type, expression)
     def parseForStatement(self):
         self.eat(TOKENTYPE.FOR)
-        variable = self.parseVariableDeclaration()
+        start = self.parseNode()
         self.eat(TOKENTYPE.COLON)
-        range = self.parseExpression()
+        end = self.parseNode()
+        self.eat(TOKENTYPE.COLON)
+        step = self.parseNode()
         body = self.parseBlock()
-        return ForStatement(variable, range, body)
+        return ForStatement(start, end, step, body)
 
     def parseExpression(self, precedence=0):
+        cur = self.curToken()
+        if cur.type in UNARY_OPERATORS:
+            self.advance()
+            operand = self.parseExpression(ORDER_OF_OPERATIONS[cur.type][1])
+            return UnaryOperation(cur.value, operand)
+
         left = self.parseAtom()
 
         while True:
@@ -258,14 +297,11 @@ class Parser:
                 break
 
             associativity, op_precedence = ORDER_OF_OPERATIONS[cur.type]
-            if associativity == 'LEFT':
-                next_precedence = op_precedence + 1
-            else:
-                next_precedence = op_precedence
-
+            next_precedence = op_precedence + 1 if associativity == 'LEFT' else op_precedence
+            #print("CUR", cur, "NEXT PRECEDENCE", next_precedence, "PRECEDENCE", precedence, "OP PRECEDENCE", op_precedence)
             self.advance()
             right = self.parseExpression(next_precedence)
-            left = BinaryOperation(left, cur, right)
+            left = BinaryOperation(left, cur.value, right)
 
         return left
 
@@ -274,6 +310,9 @@ class Parser:
         if cur.type == TOKENTYPE.INT_LITERAL:
             self.advance()
             return IntLiteral(int(cur.value))
+        elif cur.type == TOKENTYPE.NULL:
+            self.eat(TOKENTYPE.NULL)
+            return NullLiteral()
         elif cur.type == TOKENTYPE.STRUCT_LITERAL:
             self.advance()
             return StructLiteral(self.parseBlock())
@@ -285,15 +324,15 @@ class Parser:
             return StructCreation(self.eat(TOKENTYPE.NAME).value)
         elif cur.type == TOKENTYPE.NAME:
 
-            print("GOT NAME EXPRESSION", cur, self.curToken(), self.peek())
+            #print("GOT NAME EXPRESSION", cur, self.curToken(), self.peek())
             if self.peek().type == TOKENTYPE.COLON:
                 # function call
                 return self.parseFunctionCall()
 
             if self.peek().type == TOKENTYPE.DOT:
-                print("GOT DOT")
+                #print("GOT DOT")
                 if self.peek(3).type == TOKENTYPE.COLON:
-                    print("COLONNNN")
+                    #print("COLONNNN")
                     # Struct method call
                     return self.parseMethodCall()
                 # Struct variable access
@@ -325,7 +364,7 @@ class Parser:
             self.eat(TOKENTYPE.RBRACKET)
             return ListLiteral(items)
         else:
-            self.throwError(f"Unexpected token {cur.type}")
+            self.throwError(f"Unexpected token {cur.type} on line: {cur.line} col: {cur.column}")
 
 
 
@@ -336,5 +375,5 @@ if __name__ == "__main__":
     t = Lexer(text).tokenize()
     parser = Parser()
     ast = parser.parse(t)
-    print("-"*10 + " AST " + "-"*10)
-    print(ast)
+    #print("-"*10 + " AST " + "-"*10)
+    #print(ast)

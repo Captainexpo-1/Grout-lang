@@ -1,14 +1,11 @@
 import tokens
 
-class LLVMInstruction:
-    def __init__(self, instruction):
-        self.instruction = instruction
-    def __repr__(self):
-        return f"LLVMInstruction({self.instruction})"
+
 class ASTNode:
     # base class for all AST nodes
     def __init__(self):
         pass
+
 class Expression(ASTNode):
     # base class for all expressions
     def __init__(self):
@@ -18,15 +15,21 @@ class Statement(ASTNode):
     # base class for all statements
     def __init__(self):
         pass
-
-class Variable(Expression):
-    def __init__(self, name: str):
-        self.name = name
+class Program(ASTNode):
+    def __init__(self, statements: list[Statement]):
+        self.statements = statements
 
     def __repr__(self):
-        return f"Variable({self.name})"
+        return f"Program({self.statements})"
+class Variable(Expression):
+    def __init__(self, name: str, data_type = None):
+        self.name = name
+        self.data_type = data_type
 
-class IFStatement(Statement):
+    def __repr__(self):
+        return f"Variable({self.name},{self.data_type})"
+
+class IfStatement(Statement):
     def __init__(self, condition: Expression, body: list[Statement], else_body: list[Statement] = None):
         self.condition = condition
         self.body = body
@@ -36,18 +39,21 @@ class IFStatement(Statement):
         return f"IFStatement({self.condition}, {self.body}, {self.else_body})"
     
 class FunctionDefinition(Statement):
-    def __init__(self, name, args, body):
+    def __init__(self, name, args, return_type, body):
         self.name = name
         self.args = args
         self.body = body
+        self.return_type = return_type
     def __repr__(self):
-        return f"FunctionDefinition({self.name},{self.args},{self.body})"
+        return f"FunctionDefinition({self.name},{self.args},{self.return_type},{self.body})"
+
 class FunctionCall(Expression):
-    def __init__(self, name, args):
+    def __init__(self, name, return_type, args):
         self.name = name
         self.args = args
+        self.return_type = return_type
     def __repr__(self):
-        return f"FunctionCall({self.name},{self.args})"
+        return f"FunctionCall({self.name},{self.return_type},{self.args})"
 class ReturnStatement(Statement):
     def __init__(self, expression):
         self.expression = expression
@@ -59,7 +65,13 @@ class ElseStatment(Statement):
 
     def __repr__(self):
         return f"ElseStatement({self.body})"
-        
+class UnaryOperation(Expression):
+    def __init__(self, operator: str, expression: Expression):
+        self.operator = operator
+        self.expression = expression
+
+    def __repr__(self):
+        return f"UnaryOperation({self.operator}, {self.expression})"
 class ElifStatement(Statement):
     def __init__(self, condition: Expression, body: list[Statement], else_body: list[Statement] = None):
             self.condition = condition
@@ -86,6 +98,7 @@ class StructLiteral(Expression):
         self.value = value
     def __repr__(self):
         return f"StructLiteral({self.value})"
+    
 class ListLiteral(Expression):
     def __init__(self, items):
         self.items = items
@@ -93,7 +106,12 @@ class ListLiteral(Expression):
     def __repr__(self):
         return f"ListLiteral({self.items})"
         
-
+class NullLiteral(Expression):
+    def __init__(self):
+        self.value = "null"
+    def __repr__(self):
+        return f"NullLiteral({self.value})"
+    
 class FloatLiteral(Expression):
     def __init__(self, value: float):
         self.value = value
@@ -104,7 +122,8 @@ class FloatLiteral(Expression):
 
 class StringLiteral(Expression):
     def __init__(self, value: str):
-        self.value = value
+        
+        self.value = value.replace("\"","").replace("\'","")
 
     def __repr__(self):
         return f"StringLiteral({self.value})"
@@ -150,19 +169,21 @@ class Assignment:
     def __repr__(self):
         return f"Assignment({self.name}, {self.value})"
 class RangeLiteral(Expression):
-    def __init__(self,start,end):
+    def __init__(self,start,end,step):
         self.start = start
         self.end = end
+        self.step = step
     def __repr__(self) -> str:
-        return f"RangeLiteral({self.start},{self.end})"
+        return f"RangeLiteral({self.start},{self.end},{self.step})"
 
 class ForStatement(Statement):
-    def __init__(self, variable, range, body):
-        self.variable = variable
-        self.range = range
+    def __init__(self, start, condition, step, body):
+        self.start = start
+        self.condition = condition
         self.body = body
+        self.step = step
     def __repr__(self):
-        return f"ForStatement({self.variable},{self.range},{self.body})"
+        return f"ForStatement({self.start},{self.condition},{self.step},{self.body})"
 
 
 class StructMethodCall(Expression):
@@ -184,8 +205,11 @@ class DataType:
         pass
     def __str__(self):
         return self.__repr__()
-
-
+class VoidType(DataType):
+    def __init__(self):
+        pass
+    def __repr__(self):
+        return f"VoidType()"
 class ListType(DataType):
     def __init__(self, subType):
         self.subType = subType
