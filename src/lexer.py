@@ -76,23 +76,22 @@ def tokenize(text):
 if __name__ == "__main__":
     t=tokenize(
 """
-fn fizzbuzz : n {
-    for int i : 1..n {
-        if i % 15 == 0 {
-            print : "FizzBuzz"
-        } elif i % 3 == 0 {
-            print : "Fizz"
-        } elif i % 5 == 0 {
-            print : "Buzz"
-        } else {
-            print : i
-        }
+fn factorial -> int : int n {
+    if n == 0 {
+        return 1
     }
-    
+    return n * factorial : (n - 1)
 }
-fizzbuzz : null
 
 
+fn main -> int : {
+    int n = 5
+    int result = factorial : (n)
+    print : ("Factorial of", n, "is", result)
+    return 0
+}
+
+main: ()
 """
     )
     for i in t:

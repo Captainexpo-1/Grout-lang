@@ -124,7 +124,7 @@ TOKEN_RULES = {
     # Literals
     TOKENTYPE.INT_LITERAL: r"\d+",
     TOKENTYPE.FLOAT_LITERAL: r"\d+\.\d+",
-    TOKENTYPE.STRING_LITERAL: r"(\"|\').*(\"|\')",
+    TOKENTYPE.STRING_LITERAL: r'"([^"]*)"',
     TOKENTYPE.BOOL_LITERAL: r"true|false",
 
     TOKENTYPE.EOF: r"$",

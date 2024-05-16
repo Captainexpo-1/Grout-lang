@@ -123,7 +123,7 @@ class FloatLiteral(Expression):
 class StringLiteral(Expression):
     def __init__(self, value: str):
         
-        self.value = value.replace("\"","").replace("\'","")
+        self.value = value[1:-1]
 
     def __repr__(self):
         return f"StringLiteral({self.value})"
