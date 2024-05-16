@@ -43,6 +43,7 @@ class TOKENTYPE:
     OR = "OR"
     FOR = "FOR"
     ARROW = "ARROW"
+    COMMENT = "COMMENT"
 
 
 
@@ -128,9 +129,10 @@ TOKEN_RULES = {
 
     TOKENTYPE.EOF: r"$",
     TOKENTYPE.NEWLINE: r"\n",
+    TOKENTYPE.COMMENT: r"//.*"
 }
 TOKEN_PRIORITY = [
-
+    TOKENTYPE.COMMENT,
     TOKENTYPE.STRUCT_LITERAL,
 
     # Keywords

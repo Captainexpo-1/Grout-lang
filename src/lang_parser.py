@@ -64,9 +64,11 @@ class Parser:
 
 
     def parseNode(self):
+
         if self.curToken().type in token.DATA_TYPES:
             return self.parseVariableDeclaration()
-
+        elif self.curToken().type == TOKENTYPE.NAME:
+            return self.handleName()
         elif self.curToken().type == TOKENTYPE.FOR:
             return self.parseForStatement()
         elif self.curToken().type == TOKENTYPE.FUNCTION:
@@ -80,8 +82,7 @@ class Parser:
         elif self.curToken().type == TOKENTYPE.NEWLINE:
             self.eat(TOKENTYPE.NEWLINE)
             return self.parseNode()
-        elif self.curToken().type == TOKENTYPE.NAME:
-            return self.handleName()
+
         elif self.curToken().type in token.ATOMS:
             try:
                 return self.parseExpression()
@@ -102,16 +103,18 @@ class Parser:
         args = self.parseFunctionArgs()
         return StructMethodCall(struct, func, args)
     def handleName(self):
-        print("HANDLING NAME",self.curToken(),self.peek())
+        #print("HANDLING NAME",self.curToken(),self.peek())
         #print(self.curToken(),self.peek())
         if self.peek().type == TOKENTYPE.EQUAL :
             #print("GOT VAR ASSIGN")
             return self.parseVariableAssignment()
         elif self.peek().type in ORDER_OF_OPERATIONS.keys():
-            print("GOT EXPRESSION")
+            #print("GOT EXPRESSION")
             return self.parseExpression()
-        elif self.peek().type == TOKENTYPE.COLON:
-            #print("FUNC CALL")
+        
+        # Again, this is a hack to impliment the grammar. What the fuck.
+        elif self.peek().type == TOKENTYPE.COLON and self.curToken().value in self.function_returns:
+            #print("FUNC CALL", self.curToken(), self.peek(), self.peek(2), self.function_returns)
             return self.parseFunctionCall()
         elif self.peek().type == TOKENTYPE.DOT and self.peek(3).type == TOKENTYPE.COLON:
             #print("METHOD CALL")
@@ -184,6 +187,7 @@ class Parser:
 
         return FunctionDefinition(name, params, return_type, body)
     def parseFunctionArgs(self):
+        #print("PARSING FUNCTION ARGS", self.tokens[self.current-1],self.curToken(), self.peek(), self.peek(2))
         self.eat(TOKENTYPE.LPAREN)
         params = []
         while self.curToken().type != TOKENTYPE.RPAREN:
@@ -196,7 +200,7 @@ class Parser:
         #print("GOT OUT")
         return params
     def parseFunctionCall(self):
-        #print("FUNC CALL")
+        #print("FUNC CALL", self.curToken(), self.peek(), self.peek(2), self.function_returns)
         name = self.eat(TOKENTYPE.NAME).value
         self.eat(TOKENTYPE.COLON)
         args = self.parseFunctionArgs()
@@ -284,6 +288,7 @@ class Parser:
 
     def parseExpression(self, precedence=0):
         cur = self.curToken()
+        #print("PARSING EXPRESSION", cur, self.peek(), self.peek(2))
         if cur.type in UNARY_OPERATORS:
             self.advance()
             operand = self.parseExpression(ORDER_OF_OPERATIONS[cur.type][1])
@@ -324,8 +329,8 @@ class Parser:
             return StructCreation(self.eat(TOKENTYPE.NAME).value)
         elif cur.type == TOKENTYPE.NAME:
 
-            #print("GOT NAME EXPRESSION", cur, self.curToken(), self.peek())
-            if self.peek().type == TOKENTYPE.COLON:
+            # Shit hack to fix shit grammar. What the fuck is this: <name> : (<arg1>,<arg2>,etc.)
+            if self.peek().type == TOKENTYPE.COLON and cur.value in self.function_returns:
                 # function call
                 return self.parseFunctionCall()
 

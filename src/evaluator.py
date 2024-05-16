@@ -62,6 +62,8 @@ class Evaluator:
             return self.visit_string_literal(node)
         elif isinstance(node, BooleanLiteral):
             return self.visit_boolean_literal(node)
+        elif isinstance(node, StructLiteral):
+            return self.visit_struct_literal(node)
         elif isinstance(node, Variable):
             return self.visit_variable(node, env)
         elif isinstance(node, BinaryOperation):
@@ -112,7 +114,9 @@ class Evaluator:
 
     def visit_variable(self, node, env):
         return env.get(node.name)
-
+    
+    def visit_struct_literal(self, node):
+        return node.value
     def visit_binary_operation(self, node, env):
         left = self.evaluate(node.left, env)
         right = self.evaluate(node.right, env)
@@ -228,8 +232,9 @@ class Evaluator:
 if __name__ == "__main__":
     text = open(argv[1],'r').read()
     t = Lexer(text).tokenize()
+    #print(t)
     parser = Parser()
     ast = parser.parse(t)
-    print(ast)
+    #print(ast)
     evaluator = Evaluator()
     evaluator.evaluate(ast)

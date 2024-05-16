@@ -63,7 +63,8 @@ class Lexer:
             self.skip_whitespace()
             next_token = self.get_next_token()
             if next_token:
-                self.tokens.append(next_token)
+                if next_token.type != token.TOKENTYPE.COMMENT:
+                    self.tokens.append(next_token)
             else:
                 self.tokens.append(token.Token(token.TOKENTYPE.EOF, ""))
         return self.tokens
