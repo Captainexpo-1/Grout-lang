@@ -48,7 +48,7 @@ def run_file(file):
     tree = parser.parse(tokens)
     if show_ast:
         print(tree)
-    evaluator = Evaluator()
+    evaluator = Evaluator(verbose_override=("-v" in argv))
     evaluator.evaluate(tree)
 
 def main():

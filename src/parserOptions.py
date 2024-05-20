@@ -9,11 +9,16 @@ UNARY_OPERATORS = [
 ORDER_OF_OPERATIONS: dict = {
     token.TOKENTYPE.RANGE: ("LEFT",8),   # Range operator should have the highest precedence
     token.TOKENTYPE.CARET: ("LEFT",7),  # Assuming ^ is for exponentiation and is right-associative
+    token.TOKENTYPE.CARET_EQUAL: ("LEFT",7),
     token.TOKENTYPE.STAR: ("LEFT",6),    # *, /, % should have the same precedence
     token.TOKENTYPE.SLASH: ("LEFT",6),
+    token.TOKENTYPE.SLASH_EQUAL: ("LEFT",6),
     token.TOKENTYPE.PERCENT: ("LEFT",6),
+    token.TOKENTYPE.STAR_EQUAL: ("LEFT",6),
     token.TOKENTYPE.PLUS: ("LEFT",5),    # + and - should have the same precedence
+    token.TOKENTYPE.PLUS_EQUAL: ("LEFT",5),
     token.TOKENTYPE.MINUS: ("LEFT",5),
+    token.TOKENTYPE.MINUS_EQUAL: ("LEFT",5),
     token.TOKENTYPE.GREATER: ("LEFT",4), # Comparisons
     token.TOKENTYPE.LESS: ("LEFT",4),
     token.TOKENTYPE.GREATER_EQUAL: ("LEFT",4),

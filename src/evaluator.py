@@ -16,15 +16,17 @@ class Struct:
         return f"Struct({self.env.variables})"
 PYTHON_DATA_TYPE_TO_DATA_TYPE_MAP.update ({Struct: StructType})
 class Environment:
-    def __init__(self, parent=None, type='function', global_env=None):
+    def __init__(self, parent=None, type='function', global_env=None, verbose_override=None):
         self.variables = {}
         self.var_data_types = {}
         self.functions = {}
         self.parent = parent
         self.type = type
         self.global_env = global_env
+        self.verbose_override = verbose_override
         
     def throwError(self, message, verbose=False, t="Runtime"):
+        verbose = self.verbose_override if self.verbose_override is not None else verbose
         if not verbose: std.error(message,t)
         raise std.LangError(message)
     
@@ -72,15 +74,18 @@ class ReturnValue(Exception):
         self.value = value
 
 class Evaluator:
-    def __init__(self):
+    def __init__(self, verbose_override=None):
         self.global_env = Environment(type='global')
         self.builtins = {
             "print": lambda *args: print(*args),
             "input": lambda prompt: input(prompt),
         }
         self.call_stack = []
+        self.verbose_override = verbose_override
+        
     def throwError(self, message, verbose=False, t="Runtime"):
-        if not verbose: std.error(message, t)
+        verbose = self.verbose_override if self.verbose_override is not None else verbose
+        if not verbose: std.error(message,t)
         raise std.LangError(message)
     def isAllowed(self, node, env):
         t = type(node)
@@ -245,6 +250,24 @@ class Evaluator:
             return left and right
         elif operator == '||':
             return left or right
+        elif operator == '+=':
+            env.set(node.left.name, left + right)
+            return left + right
+        elif operator == '-=':
+            env.set(node.left.name, left - right)
+            return left - right
+        elif operator == '/=':
+            env.set(node.left.name, left / right)
+            return left / right
+        elif operator == '*=':
+            env.set(node.left.name, left * right)
+            return left * right
+        elif operator == '^=':
+            env.set(node.left.name, left ** right)
+            return left ** right
+        elif operator == '%=':
+            env.set(node.left.name, left % right)
+            return left % right
         else:
             self.throwError(f"Unknown operator: {operator}")
 
@@ -319,7 +342,7 @@ class Evaluator:
 
     def visit_return_statement(self, node, env):
         value = self.evaluate(node.expression, env)
-        self.throwError(value)
+        raise ReturnValue(value)
 
     def visit_function_definition(self, node, env):
         env.set_function(node.name, node)
