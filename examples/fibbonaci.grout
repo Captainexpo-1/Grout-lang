@@ -1,0 +1,10 @@
+fn fibb -> int : int n {
+    if n <= 1{
+        return n
+    }
+    return fibb(n - 1) + fibb(n - 2);
+}
+
+
+
+fibb : (5)
