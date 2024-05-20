@@ -2,14 +2,32 @@ from sys import argv
 from parserNode import *
 from lexer import Lexer,tokenize
 from lang_parser import Parser
+import std
+from parserOptions import *
+
+class Struct:
+    def __init__(self, env):
+        self.env = env
+    def get(self, name):
+        return self.env.get(name)
+    def set(self, name, value):
+        self.env.set(name, value)
+    def __repr__(self):
+        return f"Struct({self.env.variables})"
+PYTHON_DATA_TYPE_TO_DATA_TYPE_MAP.update ({Struct: StructType})
 class Environment:
     def __init__(self, parent=None, type='function', global_env=None):
         self.variables = {}
+        self.var_data_types = {}
         self.functions = {}
         self.parent = parent
         self.type = type
         self.global_env = global_env
-
+        
+    def throwError(self, message, verbose=False, t="Runtime"):
+        if not verbose: std.error(message,t)
+        raise std.LangError(message)
+    
     def get(self, name):
         if type(name) == Variable: name = name.name
         if name in self.variables:
@@ -17,10 +35,22 @@ class Environment:
         elif self.parent:
             return self.parent.get(name)
         else:
-            raise NameError(f"Undefined variable: {name}")
+            self.throwError(f"Undefined variable: {name}")
 
     def set(self, name, value):
-        if type(name) == Variable: name = name.name
+        if type(name) == Variable: 
+            self.var_data_types[name.name] = name.data_type
+            name = name.name
+
+        if name in self.var_data_types:
+            if type(self.var_data_types[name]) == ListType:
+                subType = self.var_data_types[name].subType
+                for i in value:
+                    if PYTHON_DATA_TYPE_TO_DATA_TYPE_MAP[type(i)] != subType:
+                        self.throwError(f"Cannot set variable {name} of type {self.var_data_types[name]} to {value}")
+            elif type(self.var_data_types[name]) != PYTHON_DATA_TYPE_TO_DATA_TYPE_MAP[type(value)]:
+                self.throwError(f"Cannot set variable {name} of type {self.var_data_types[name]} to {value}")
+        
         self.variables[name] = value
 
     def get_function(self, name):
@@ -31,29 +61,49 @@ class Environment:
         elif self.parent:
             return self.parent.get_function(name)
         else:
-            raise NameError(f"Undefined function: {name}")
+            self.throwError(f"Undefined function: {name}")
 
     def set_function(self, name, value):
         self.functions[name] = value
-
+    def __repr__(self):
+        return f"Environment(\n\tVars: {self.variables}\n\tTypes: {self.var_data_types}\n\tFuncs: {self.functions}\n\tParent: {self.parent}\n\tType: {self.type}\n\tGlobal: {self.global_env}\n)"
 class ReturnValue(Exception):
     def __init__(self, value):
         self.value = value
 
 class Evaluator:
     def __init__(self):
-        self.global_env = Environment()
+        self.global_env = Environment(type='global')
         self.builtins = {
             "print": lambda *args: print(*args),
             "input": lambda prompt: input(prompt),
         }
         self.call_stack = []
+    def throwError(self, message, verbose=False, t="Runtime"):
+        if not verbose: std.error(message, t)
+        raise std.LangError(message)
+    def isAllowed(self, node, env):
+        t = type(node)
+        disallowed_struct = [VariableAccess, FunctionDefinition]
+        dissalowed_function = []
+        dissalowed_global = []
+        if t in disallowed_struct and env.type == 'struct':
+            self.throwError(f"Structs cannot contain {t.__name__}")
+        elif t in dissalowed_function and env.type == 'function':
+            self.throwError(f"Functions cannot contain {t.__name__}")
+        elif t in dissalowed_global and env.type == 'global':
+            self.throwError(f"Global cannot contain {t.__name__}")
 
     def evaluate(self, node, env=None):
         if env is None:
             env = self.global_env
+        self.isAllowed(node, env)
         if isinstance(node, Program):
             return self.visit_program(node, env)
+        elif isinstance(node, str):
+            return node
+        elif isinstance(node, ListLiteral):
+            return self.visit_list_literal(node)
         elif isinstance(node, IntLiteral):
             return self.visit_int_literal(node)
         elif isinstance(node, FloatLiteral):
@@ -64,14 +114,14 @@ class Evaluator:
             return self.visit_boolean_literal(node)
         elif isinstance(node, StructLiteral):
             return self.visit_struct_literal(node)
-        elif isinstance(node, Variable):
-            return self.visit_variable(node, env)
         elif isinstance(node, BinaryOperation):
             return self.visit_binary_operation(node, env)
         elif isinstance(node, UnaryOperation):
             return self.visit_unary_operation(node, env)
         elif isinstance(node, VariableDeclaration):
             return self.visit_variable_declaration(node, env)
+        elif isinstance(node, AccessAssignment):
+            return self.visit_access_assignment(node, env)
         elif isinstance(node, Assignment):
             return self.visit_assignment(node, env)
         elif isinstance(node, IfStatement):
@@ -86,20 +136,25 @@ class Evaluator:
             return self.visit_return_statement(node, env)
         elif isinstance(node, FunctionDefinition):
             return self.visit_function_definition(node, env)
+        elif isinstance(node, VariableAccess):
+            return self.visit_struct_variable(node, env)
+        elif isinstance(node, Variable):
+            return self.visit_variable(node, env)
         elif isinstance(node, NullLiteral):
             return None
         elif isinstance(node, list):
             for stmt in node:
                 self.evaluate(stmt, env)
         else:
-            raise ValueError(f"Unknown node type: {node}")
+            self.throwError(f"Unknown node type: {node}")
 
     def visit_program(self, node, env):
         result = None
-        for stmt in node.statements:
+        for stmt in node.body:
             result = self.evaluate(stmt, env)
         return result
-
+    def visit_list_literal(self, node):
+        return [self.evaluate(item) for item in node.items]
     def visit_int_literal(self, node):
         return node.value
 
@@ -114,9 +169,50 @@ class Evaluator:
 
     def visit_variable(self, node, env):
         return env.get(node.name)
-    
+    def visit_struct_block(self, node):
+        # evaluate block in new environment
+        struct_env = Environment(type='struct', global_env=Environment())
+        for stmt in node.value:
+            self.evaluate(stmt, struct_env)
+        return Struct(struct_env)
     def visit_struct_literal(self, node):
-        return node.value
+        return self.visit_struct_block (node)
+    def visit_struct_variable(self, node, env, ret_env=False):
+        """
+        class VariableAccess(Expression):
+            def __init__(self, struct, name):
+                self.struct = struct
+                self.name = name
+            def __repr__(self):
+                return f"VariableAccess({self.struct}, {self.name})"
+        """
+        #VariableAccess(
+        #   VariableAccess(
+        #        a, 
+        #        b
+        #   ), 
+        #   c
+        #)
+        # a.b.c
+        struct = self.evaluate(node.struct, env)
+        if isinstance(struct, Struct):
+            if ret_env:
+                return struct
+            return struct.get(node.name)
+        elif isinstance(struct, str):
+            # Got the name of a struct
+            struct = env.get(struct)
+            if ret_env:
+                return struct
+            return struct.get(node.name)
+        else:
+            self.throwError(f"Variable {node.name} not found in struct {struct}")
+    def visit_access_assignment(self, node, env):
+        s_v = self.visit_struct_variable(node.name, env, ret_env=True)
+        value = self.evaluate(node.value, env)
+        s_v.set(node.name, value)
+
+
     def visit_binary_operation(self, node, env):
         left = self.evaluate(node.left, env)
         right = self.evaluate(node.right, env)
@@ -150,7 +246,7 @@ class Evaluator:
         elif operator == '||':
             return left or right
         else:
-            raise ValueError(f"Unknown operator: {operator}")
+            self.throwError(f"Unknown operator: {operator}")
 
     def visit_unary_operation(self, node, env):
         operand = self.evaluate(node.expression, env)
@@ -160,7 +256,7 @@ class Evaluator:
         elif operator == '!':
             return not operand
         else:
-            raise ValueError(f"Unknown operator: {operator}")
+            self.throwError(f"Unknown operator: {operator}")
 
     def visit_variable_declaration(self, node, env):
         value = self.evaluate(node.value, env)
@@ -168,7 +264,7 @@ class Evaluator:
 
     def visit_assignment(self, node, env):
         value = self.evaluate(node.value, env)
-        env.set(node.name.name, value)
+        env.set(node.name, value)
 
     def visit_if_statement(self, node, env):
         condition = self.evaluate(node.condition, env)
@@ -223,7 +319,7 @@ class Evaluator:
 
     def visit_return_statement(self, node, env):
         value = self.evaluate(node.expression, env)
-        raise ReturnValue(value)
+        self.throwError(value)
 
     def visit_function_definition(self, node, env):
         env.set_function(node.name, node)

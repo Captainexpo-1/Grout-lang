@@ -19,7 +19,7 @@ class Parser:
         }
 
     def throwError(self, message):
-        raise std.LangError(message)
+        std.error(message)
 
     def peek(self, a=1) -> token.Token:
         if self.current + a >= len(self.tokens):
@@ -81,7 +81,6 @@ class Parser:
         elif self.curToken().type == TOKENTYPE.NEWLINE:
             self.eat(TOKENTYPE.NEWLINE)
             return self.parseNode()
-
         elif self.curToken().type in token.ATOMS:
             try:
                 return self.parseExpression()
@@ -91,16 +90,6 @@ class Parser:
         elif self.curToken().type == TOKENTYPE.EOF:
             return None
         self.throwError(f"Unexpected token {self.curToken().type} on line: {self.curToken().line} col: {self.curToken().column}")
-    def parseMethodCall(self):
-        """
-        requires: curToken == TOKENTYPE.NAME
-        """
-        struct = self.eat(TOKENTYPE.NAME).value
-        self.eat(TOKENTYPE.DOT)
-        func = self.eat(TOKENTYPE.NAME).value
-        self.eat(TOKENTYPE.COLON)
-        args = self.parseFunctionArgs()
-        return StructMethodCall(struct, func, args)
     def handleName(self):
         if self.peek().type == TOKENTYPE.EQUAL :
             return self.parseVariableAssignment()
@@ -110,10 +99,8 @@ class Parser:
         # Again, this is a hack to impliment the grammar. What the fuck.
         elif self.peek().type == TOKENTYPE.COLON and self.curToken().value in self.function_returns:
             return self.parseFunctionCall()
-        elif self.peek().type == TOKENTYPE.DOT and self.peek(3).type == TOKENTYPE.COLON:
-            return self.parseMethodCall()
         elif self.peek().type == TOKENTYPE.DOT:
-            return self.parseVariableAssignment()
+            return self.handle_struct_variable_access(self.eat(TOKENTYPE.NAME).value)
         else:
             self.throwError(f"Unexpected token {self.curToken().type} on line: {self.curToken().line} col: {self.curToken().column}")
     def parseBlock(self):
@@ -240,7 +227,7 @@ class Parser:
         if self.curToken().type == TOKENTYPE.DOT:
             self.eat(TOKENTYPE.DOT)
             access = self.eat(TOKENTYPE.NAME).value
-            variable = StructVariable(variable, access)
+            variable = VariableAccess(variable, access)
         else:
             variable = Variable(variable, self.variable_types[variable])
         self.eat(TOKENTYPE.EQUAL)
@@ -256,13 +243,13 @@ class Parser:
     def parseVariableDeclaration(self):
         data_type = self.parseDataType()
         variable = self.curToken().value
-        variable = Variable(variable, data_type)
+        variable = variable
         self.eat(TOKENTYPE.NAME)
-        expression = None
+        expression = NullLiteral()
         if self.curToken().type == TOKENTYPE.EQUAL:
             self.eat(TOKENTYPE.EQUAL)
             expression = self.parseExpression()
-        self.variable_types[variable.name] = data_type
+        self.variable_types[variable] = data_type
         return VariableDeclaration(variable, data_type, expression)
     def parseForStatement(self):
         self.eat(TOKENTYPE.FOR)
@@ -295,6 +282,22 @@ class Parser:
             left = BinaryOperation(left, cur.value, right)
 
         return left
+    def handle_struct_variable_access(self, struct):
+        self.eat(TOKENTYPE.DOT)
+        access = self.eat(TOKENTYPE.NAME).value
+        sv = VariableAccess(struct, access)
+        
+        while self.curToken().type == TOKENTYPE.DOT:
+            self.eat(TOKENTYPE.DOT)
+            access = self.eat(TOKENTYPE.NAME).value
+            sv = VariableAccess(sv, access)
+        
+        if self.curToken().type == TOKENTYPE.EQUAL:
+            self.eat(TOKENTYPE.EQUAL)
+            expression = self.parseExpression()
+            return AccessAssignment(sv, expression)
+        
+        return sv
 
     def parseAtom(self):
         cur = self.curToken()
@@ -305,7 +308,7 @@ class Parser:
             self.eat(TOKENTYPE.NULL)
             return NullLiteral()
         elif cur.type == TOKENTYPE.STRUCT_LITERAL:
-            self.advance()
+            self.eat(TOKENTYPE.STRUCT_LITERAL)
             return StructLiteral(self.parseBlock())
         elif cur.type == TOKENTYPE.FLOAT_LITERAL:
             self.advance()
@@ -321,14 +324,9 @@ class Parser:
                 return self.parseFunctionCall()
 
             if self.peek().type == TOKENTYPE.DOT:
-                if self.peek(3).type == TOKENTYPE.COLON:
-                    # Struct method call
-                    return self.parseMethodCall()
                 # Struct variable access
                 struct = self.eat(TOKENTYPE.NAME).value
-                self.eat(TOKENTYPE.DOT)
-                name = self.eat(TOKENTYPE.NAME)
-                return StructVariable(struct, name)
+                return self.handle_struct_variable_access(struct)
             name = self.eat(TOKENTYPE.NAME).value
             return Variable(name)
         elif cur.type == TOKENTYPE.LPAREN:

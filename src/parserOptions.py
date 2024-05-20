@@ -47,3 +47,13 @@ TOKEN_TO_DATA_TYPE_MAP = {
     tokens.TOKENTYPE.STRUCT : StructType,
     tokens.TOKENTYPE.VOID : VoidType
 }
+
+PYTHON_DATA_TYPE_TO_DATA_TYPE_MAP = {
+    int : IntType,
+    float : FloatType,
+    bool : BoolType,
+    str : StringType,
+    list : ListType,
+    dict : StructType,
+    type(None) : VoidType
+}

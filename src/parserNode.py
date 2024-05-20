@@ -16,11 +16,11 @@ class Statement(ASTNode):
     def __init__(self):
         pass
 class Program(ASTNode):
-    def __init__(self, statements: list[Statement]):
-        self.statements = statements
+    def __init__(self, body: list[Statement]):
+        self.body = body
 
     def __repr__(self):
-        return f"Program({self.statements})"
+        return f"Program({self.body})"
 class Variable(Expression):
     def __init__(self, name: str, data_type = None):
         self.name = name
@@ -92,7 +92,7 @@ class IntLiteral(Expression):
 
     def __repr__(self):
         return f"IntLiteral({self.value})"
-    
+
 class StructLiteral(Expression):
     def __init__(self,value):
         self.value = value
@@ -168,6 +168,12 @@ class Assignment:
 
     def __repr__(self):
         return f"Assignment({self.name}, {self.value})"
+class AccessAssignment(Assignment):
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+    def __repr__(self):
+        return f"AccessAssignment({self.name},{self.value})"
 class RangeLiteral(Expression):
     def __init__(self,start,end,step):
         self.start = start
@@ -186,19 +192,19 @@ class ForStatement(Statement):
         return f"ForStatement({self.start},{self.condition},{self.step},{self.body})"
 
 
-class StructMethodCall(Expression):
+class MethodCall(Expression):
     def __init__(self, struct, name, args):
         self.struct = struct
         self.name = name
         self.args = args
     def __repr__(self):
         return f"MethodCall({self.struct}, {self.name}, {self.args})"
-class StructVariable(Variable):
+class VariableAccess(Expression):
     def __init__(self, struct, name):
         self.struct = struct
         self.name = name
     def __repr__(self):
-        return f"StructVariable({self.struct}.{self.name})"
+        return f"VariableAccess({self.struct}, {self.name})"
     
 class DataType:
     def __init__(self):
