@@ -36,14 +36,14 @@ class Parser:
 
     def eat(self, tokentype):
         if self.curToken().type != tokentype:
-            self.throwError(f"Expected {tokentype} but got {self.curToken().type}")
+            self.throwError(f"Expected {tokentype} but got {self.curToken().type} at line: {self.curToken().line} col: {self.curToken().column}")
         
         a=self.curToken()
         self.advance()
         return a
     def eatAny(self, tokentypes):
         if self.curToken().type not in tokentypes:
-            self.throwError(f"Expected {tokentypes} but got {self.curToken().type}")
+            self.throwError(f"Expected {tokentypes} but got {self.curToken().type} at line: {self.curToken().line} col: {self.curToken().column}")
         a = self.curToken()
         self.advance()
         return a
@@ -344,7 +344,7 @@ class Parser:
         elif cur.type == TOKENTYPE.CREATE:
             self.eat(TOKENTYPE.CREATE)
             name = self.eat(TOKENTYPE.NAME).value
-            body = self.parseStructCreationBlock()
+            body = self.parseBlock()
             return StructCreation(name, body)
         elif cur.type == TOKENTYPE.NAME:
 

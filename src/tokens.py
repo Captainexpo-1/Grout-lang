@@ -140,7 +140,7 @@ TOKEN_RULES = {
     TOKENTYPE.BOOL_LITERAL: r"true|false",
 
     TOKENTYPE.EOF: r"$",
-    TOKENTYPE.NEWLINE: r"\n",
+    TOKENTYPE.NEWLINE: r"\n|\|",
     TOKENTYPE.COMMENT: r"//.*"
 }
 TOKEN_PRIORITY = [

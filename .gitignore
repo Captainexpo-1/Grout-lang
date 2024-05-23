@@ -49,3 +49,4 @@ dist/**
 package.nls.*.json
 l10n/
 output/
+examples/testing.grout
