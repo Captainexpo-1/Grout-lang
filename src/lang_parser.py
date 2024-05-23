@@ -316,7 +316,20 @@ class Parser:
             return AccessAssignment(sv, expression)
         
         return sv
-
+    def parseStructCreationBlock(self):
+        self.eat(TOKENTYPE.LBRACE)
+        block = []
+        while self.curToken().type != TOKENTYPE.RBRACE:
+            # get declarations
+            data_type = self.parseDataType()
+            variable = self.eat(TOKENTYPE.NAME).value
+            expression = NullLiteral()
+            if self.curToken().type == TOKENTYPE.EQUAL:
+                self.eat(TOKENTYPE.EQUAL)
+                expression = self.parseExpression()
+            block.append(VariableDeclaration(variable, data_type, expression))
+            self.eat(TOKENTYPE.COLON)
+        return block
     def parseAtom(self):
         cur = self.curToken()
         if cur.type == TOKENTYPE.INT_LITERAL:
@@ -331,7 +344,7 @@ class Parser:
         elif cur.type == TOKENTYPE.CREATE:
             self.eat(TOKENTYPE.CREATE)
             name = self.eat(TOKENTYPE.NAME).value
-            body = self.parseBlock()
+            body = self.parseStructCreationBlock()
             return StructCreation(name, body)
         elif cur.type == TOKENTYPE.NAME:
 
