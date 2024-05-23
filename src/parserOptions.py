@@ -33,14 +33,12 @@ LITERAL_TO_TYPE_MAP = {
     FloatLiteral: FloatType,
     BooleanLiteral: BoolType,
     StringLiteral: StringType,
-    StructLiteral: StructType
 }
 DATA_TYPES_TO_LITERAL_MAP = {
     token.TOKENTYPE.INT: IntLiteral,
     token.TOKENTYPE.FLOAT: FloatLiteral,
     token.TOKENTYPE.BOOL: BooleanLiteral,
     token.TOKENTYPE.STRING: StringLiteral,
-    token.TOKENTYPE.STRUCT: StructLiteral
 }
 
 TOKEN_TO_DATA_TYPE_MAP = {
@@ -50,7 +48,7 @@ TOKEN_TO_DATA_TYPE_MAP = {
     tokens.TOKENTYPE.BOOL : BoolType,
     tokens.TOKENTYPE.STRING : StringType,
     tokens.TOKENTYPE.STRUCT : StructType,
-    tokens.TOKENTYPE.VOID : VoidType
+    tokens.TOKENTYPE.VOID : VoidType,
 }
 
 PYTHON_DATA_TYPE_TO_DATA_TYPE_MAP = {

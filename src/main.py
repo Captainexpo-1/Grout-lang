@@ -50,6 +50,8 @@ def run_file(file):
         print(tree)
     evaluator = Evaluator(verbose_override=("-v" in argv))
     evaluator.evaluate(tree)
+    if "-vars" in argv:
+        print(evaluator.global_env)
 
 def main():
     # parse args:

@@ -93,11 +93,12 @@ class IntLiteral(Expression):
     def __repr__(self):
         return f"IntLiteral({self.value})"
 
-class StructLiteral(Expression):
-    def __init__(self,value):
-        self.value = value
+class StructDefinition(Statement):
+    def __init__(self,name,body):
+        self.body = body
+        self.name = name
     def __repr__(self):
-        return f"StructLiteral({self.value})"
+        return f"StructDefinition({self.name},{self.body})"
     
 class ListLiteral(Expression):
     def __init__(self, items):
@@ -129,10 +130,11 @@ class StringLiteral(Expression):
         return f"StringLiteral({self.value})"
 
 class StructCreation(Statement):
-    def __init__(self, name):
+    def __init__(self, name, body):
         self.name = name
+        self.body = body
     def __repr__(self):
-        return f"StructCreation({self.name})"
+        return f"StructCreation({self.name}, {self.body})"
     
 class BooleanLiteral(Expression):
     def __init__(self, value: bool):
@@ -246,7 +248,7 @@ class StringType(DataType):
     def __repr__(self):
         return f"StringType()"
 class StructType(DataType):
-    def __init__(self):
-        pass
+    def __init__(self, subType):
+        self.subType = subType 
     def __repr__(self):
-        return f"StructType()"
+        return f"StructType({self.subType})"

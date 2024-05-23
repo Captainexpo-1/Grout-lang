@@ -6,20 +6,32 @@ import std
 from parserOptions import *
 
 class Struct:
-    def __init__(self, env):
+    def __init__(self, env, name):
         self.env = env
+        self.name = name
     def get(self, name):
         return self.env.get(name)
     def set(self, name, value):
         self.env.set(name, value)
     def __repr__(self):
-        return f"Struct({self.env.variables})"
-PYTHON_DATA_TYPE_TO_DATA_TYPE_MAP.update ({Struct: StructType})
+        return f"Struct({self.name},{self.env.variables})"
+class TypeStruct:
+    def __init__(self, fields):
+        self.fields = fields # <name>: <data type>
+    def __repr__(self):
+        return f"TypeStruct({self.fields})"
+    
+PYTHON_DATA_TYPE_TO_DATA_TYPE_MAP.update (
+    {
+        Struct: StructType
+    }
+)
 class Environment:
     def __init__(self, parent=None, type='function', global_env=None, verbose_override=None):
         self.variables = {}
         self.var_data_types = {}
         self.functions = {}
+        self.structs = {}
         self.parent = parent
         self.type = type
         self.global_env = global_env
@@ -38,20 +50,38 @@ class Environment:
             return self.parent.get(name)
         else:
             self.throwError(f"Undefined variable: {name}")
-
-    def set(self, name, value):
+    def get_struct(self, name):
+        if name in self.structs:
+            return self.structs[name]
+        elif self.parent:
+            return self.parent.get_struct(name)
+        else:
+            self.throwError(f"Undefined struct: {name}")
+    def set_struct(self, name, value):
+        self.structs[name] = value
+    def set(self, name, value, dtype=None):
         if type(name) == Variable: 
             self.var_data_types[name.name] = name.data_type
             name = name.name
-
-        if name in self.var_data_types:
-            if type(self.var_data_types[name]) == ListType:
+        if value == None:
+            self.variables[name] = None
+            return  
+        if dtype:
+            if type(dtype) == ListType:
                 subType = self.var_data_types[name].subType
                 for i in value:
                     if PYTHON_DATA_TYPE_TO_DATA_TYPE_MAP[type(i)] != subType:
                         self.throwError(f"Cannot set variable {name} of type {self.var_data_types[name]} to {value}")
+            elif type(dtype) == StructType:
+                expectedStruct = dtype.subType
+                realStruct = value.name
+                if realStruct != expectedStruct:
+                    self.throwError(f"Cannot set variable {name} of type {dtype} to {value}")
             elif type(self.var_data_types[name]) != PYTHON_DATA_TYPE_TO_DATA_TYPE_MAP[type(value)]:
                 self.throwError(f"Cannot set variable {name} of type {self.var_data_types[name]} to {value}")
+        elif dtype:
+            if type(dtype) != PYTHON_DATA_TYPE_TO_DATA_TYPE_MAP[type(value)]:
+                self.throwError(f"Cannot set variable {name} of type {dtype} to {value}")
         
         self.variables[name] = value
 
@@ -68,7 +98,7 @@ class Environment:
     def set_function(self, name, value):
         self.functions[name] = value
     def __repr__(self):
-        return f"Environment(\n\tVars: {self.variables}\n\tTypes: {self.var_data_types}\n\tFuncs: {self.functions}\n\tParent: {self.parent}\n\tType: {self.type}\n\tGlobal: {self.global_env}\n)"
+        return f"Environment(\n\tVars: {self.variables}\n\tTypes: {self.var_data_types}\n\tFuncs: {self.functions}\n\tStructs: {self.structs}\n\tParent: {self.parent}\n\tType: {self.type}\n\tGlobal: {self.global_env}\n)"
 class ReturnValue(Exception):
     def __init__(self, value):
         self.value = value
@@ -79,6 +109,8 @@ class Evaluator:
         self.builtins = {
             "print": lambda *args: print(*args),
             "input": lambda prompt: input(prompt),
+            "parseNumber": lambda num: int(num) if num.isnumeric() else float(num) if num.replace('.','',1).isnumeric() else None,
+            "str": lambda s: str(s),
         }
         self.call_stack = []
         self.verbose_override = verbose_override
@@ -117,8 +149,10 @@ class Evaluator:
             return self.visit_string_literal(node)
         elif isinstance(node, BooleanLiteral):
             return self.visit_boolean_literal(node)
-        elif isinstance(node, StructLiteral):
-            return self.visit_struct_literal(node)
+        elif isinstance(node, StructCreation):
+            return self.visit_struct_creation(node, env)
+        elif isinstance(node, StructDefinition):
+            return self.visit_struct_definition(node)
         elif isinstance(node, BinaryOperation):
             return self.visit_binary_operation(node, env)
         elif isinstance(node, UnaryOperation):
@@ -174,14 +208,31 @@ class Evaluator:
 
     def visit_variable(self, node, env):
         return env.get(node.name)
-    def visit_struct_block(self, node):
-        # evaluate block in new environment
-        struct_env = Environment(type='struct', global_env=Environment())
-        for stmt in node.value:
-            self.evaluate(stmt, struct_env)
-        return Struct(struct_env)
-    def visit_struct_literal(self, node):
-        return self.visit_struct_block (node)
+    def visit_struct_creation(self, node: StructCreation, env):
+        struct = env.get_struct(node.name)
+        if not struct:
+            self.throwError(f"Struct {node.name} not found")
+        # Create a new environment for the struct and set it to the fields
+        s_env = Environment(env, type='struct')
+        for i in struct.fields:
+            s_env.set(i, None)
+            s_env.var_data_types[i] = struct.fields[i]
+        
+        # Evaluate the struct creation body
+        for stmt in node.body:
+            self.evaluate(stmt, s_env)
+        return Struct(s_env, node.name)
+    def visit_struct_definition_block(self, node):
+        # get all the fields in the struct and their data types
+        structFields = {}
+        for s in node.body:
+            structFields[s.name] = s.data_type
+        return TypeStruct(structFields)
+        
+    def visit_struct_definition(self, node):
+        struct = self.visit_struct_definition_block(node)
+        self.global_env.set_struct(node.name, struct)
+        return struct
     def visit_struct_variable(self, node, env, ret_env=False):
         """
         class VariableAccess(Expression):
@@ -213,9 +264,16 @@ class Evaluator:
         else:
             self.throwError(f"Variable {node.name} not found in struct {struct}")
     def visit_access_assignment(self, node, env):
-        s_v = self.visit_struct_variable(node.name, env, ret_env=True)
+        """
+        class AccessAssignment(Assignment):
+            def __init__(self, name, value):
+                self.name = name
+                self.value = value
+        """
+        struct = self.visit_struct_variable(node.name, env, ret_env=True)
         value = self.evaluate(node.value, env)
-        s_v.set(node.name, value)
+        struct.set(node.name.name, value)
+        return value
 
 
     def visit_binary_operation(self, node, env):
@@ -283,7 +341,7 @@ class Evaluator:
 
     def visit_variable_declaration(self, node, env):
         value = self.evaluate(node.value, env)
-        env.set(node.name, value)
+        env.set(node.name, value, dtype=node.data_type)
 
     def visit_assignment(self, node, env):
         value = self.evaluate(node.value, env)
