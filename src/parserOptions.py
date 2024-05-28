@@ -7,15 +7,15 @@ UNARY_OPERATORS = [
     token.TOKENTYPE.BANG
 ]
 ORDER_OF_OPERATIONS: dict = {
-    token.TOKENTYPE.RANGE: ("LEFT",8),   # Range operator should have the highest precedence
-    token.TOKENTYPE.CARET: ("LEFT",7),  # Assuming ^ is for exponentiation and is right-associative
+    token.TOKENTYPE.RANGE: ("LEFT",8), # Range operator has the highest precedence
+    token.TOKENTYPE.CARET: ("LEFT",7),
     token.TOKENTYPE.CARET_EQUAL: ("LEFT",7),
-    token.TOKENTYPE.STAR: ("LEFT",6),    # *, /, % should have the same precedence
+    token.TOKENTYPE.STAR: ("LEFT",6),
     token.TOKENTYPE.SLASH: ("LEFT",6),
     token.TOKENTYPE.SLASH_EQUAL: ("LEFT",6),
     token.TOKENTYPE.PERCENT: ("LEFT",6),
     token.TOKENTYPE.STAR_EQUAL: ("LEFT",6),
-    token.TOKENTYPE.PLUS: ("LEFT",5),    # + and - should have the same precedence
+    token.TOKENTYPE.PLUS: ("LEFT",5),
     token.TOKENTYPE.PLUS_EQUAL: ("LEFT",5),
     token.TOKENTYPE.MINUS: ("LEFT",5),
     token.TOKENTYPE.MINUS_EQUAL: ("LEFT",5),
@@ -25,8 +25,8 @@ ORDER_OF_OPERATIONS: dict = {
     token.TOKENTYPE.LESS_EQUAL: ("LEFT",4),
     token.TOKENTYPE.EQUAL_EQUAL: ("LEFT",3), # Equality checks
     token.TOKENTYPE.NOT_EQUAL: ("LEFT",3),
-    token.TOKENTYPE.AND: ("LEFT",2),    # Logical AND
-    token.TOKENTYPE.OR: ("LEFT",1),     # Logical OR
+    token.TOKENTYPE.AND: ("LEFT",2),
+    token.TOKENTYPE.OR: ("LEFT",1),  # Logical OR has the lowest precedence
 }
 LITERAL_TO_TYPE_MAP = {
     IntLiteral: IntType,

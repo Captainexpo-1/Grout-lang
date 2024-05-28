@@ -1,4 +1,5 @@
 import tokens as token
+import std
 class Lexer:
     def __init__(self):
         self.text = ""
@@ -10,7 +11,7 @@ class Lexer:
         self.token_rules = token.TOKEN_RULES
         self.token_priority = token.TOKEN_PRIORITY
     def error(self, character=''):
-        raise Exception(f"Invalid character: {character} at line {self.current_line}, column {self.current_column}")
+        std.error(f"Invalid character: {character} at line {self.current_line}, column {self.current_column}")
     def advance(self):
         if self.current_char == '\n':
             self.current_line += 1
@@ -26,7 +27,7 @@ class Lexer:
             if self.current_char == '\n':
                 self.current_line += 1
                 self.current_column = 0
-                self.tokens.append(token.Token(token.TOKENTYPE.NEWLINE, "\\n", line=self.current_line, column=self.current_column))
+                self.tokens.append(token.Token(token.TOKENTYPE.NEWLINE, "\\n", line=self.current_line // 2 + 1, column=self.current_column // 2 + 1))
             else:
                 self.current_column += 1
             self.advance()
@@ -39,8 +40,8 @@ class Lexer:
                     token_value = match.group(0)
                     token_start = match.start()
                     token_end = match.end()
-                    line = self.current_line
-                    column = self.current_column + (token_start - self.pos)
+                    line = self.current_line // 2 + 1
+                    column = (self.current_column + (token_start - self.pos)) // 2 + 1
                     self.pos = token_end
                     if self.pos >= len(self.text):
                         self.current_char = None
