@@ -22,5 +22,5 @@ BUILTIN_FUNCTIONS: dict[str, tuple[str,any]] = {
     "range": (
         "list", 
         lambda *args: list(range(*args))
-    ),
+    ), 
 }

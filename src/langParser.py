@@ -98,21 +98,17 @@ class Parser:
         if self.peek().type == TOKENTYPE.EQUAL :
             return self.parseVariableAssignment()
         elif self.peek().type == TOKENTYPE.AT:
-            print("Found AT", self.curToken(), self.peek(), self.peek(2))
             var = self.parseAtom()
             self.eat(TOKENTYPE.AT)
             if self.is_before_newline(TOKENTYPE.EQUAL):
                 # List assignment
-                print("List assignment")
                 index = self.parseExpression()
                 self.eat(TOKENTYPE.EQUAL)
                 value = self.parseExpression()
                 return ListElementAssignment(var, index, value)
             else:
-                print("List access")
                 # List access
                 index = self.parseExpression()
-                print("Index", index)
                 return ListAccess(var, index)
 
         elif self.peek().type in ORDER_OF_OPERATIONS.keys():
@@ -131,7 +127,7 @@ class Parser:
         self.skipWhitespace()
         self.eat(TOKENTYPE.LBRACE)
 
-        # Init block list
+        # Init block array
         block = []
         self.skipWhitespace()
         # While the block is not finished
@@ -233,7 +229,7 @@ class Parser:
     def parseElseStatement(self):
         self.eat(TOKENTYPE.ELSE)
         block = self.parseBlock()
-        return ElseStatment(block)
+        return ElseStatement(block)
     def parseIfStatement(self):
 
         # Advance without eating just to make sure we can handle elif and else
@@ -306,20 +302,16 @@ class Parser:
 
         left = self.parseAtom()
         if self.curToken().type == TOKENTYPE.AT:
-            print("Found AT", left)
             self.eat(TOKENTYPE.AT)
             if self.is_before_newline(TOKENTYPE.EQUAL):
                 # List assignment
-                print("List assignment")
                 index = self.parseExpression()
                 self.eat(TOKENTYPE.EQUAL)
                 value = self.parseExpression()
                 return ListElementAssignment(left, index, value)
             else:
-                print("List access")
                 # List access
                 index = self.parseExpression()
-                print("Index", index)
                 return ListAccess(left, index)
             
 
@@ -351,7 +343,7 @@ class Parser:
             return AccessAssignment(sv, expression)
         
         # Handle binary operations like a.x += 1
-        if self.curToken().type in ORDER_OF_OPERATIONS:
+        if self.curToken().type in [TOKENTYPE.EQUAL, TOKENTYPE.PLUS_EQUAL, TOKENTYPE.MINUS_EQUAL, TOKENTYPE.STAR_EQUAL, TOKENTYPE.SLASH_EQUAL, TOKENTYPE.PERCENT_EQUAL, TOKENTYPE.CARET_EQUAL]:
             operator = self.eatAny(ORDER_OF_OPERATIONS).value
             right_expression = self.parseExpression()
             expression = BinaryOperation(sv, operator, right_expression)

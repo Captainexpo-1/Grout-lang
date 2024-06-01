@@ -9,7 +9,14 @@ import os
 import cProfile
 import pstats
 
-if "-eval" in argv: Evaluator = __import__("evaluator_v"+argv[argv.index("-eval")+1]).Evaluator
+
+
+if "-eval" in argv: 
+    next = argv[argv.index("-eval")+1]
+    if next.strip() == "transpile":
+        Evaluator = __import__("transpiler").Transpiler
+    else:
+        Evaluator = __import__("evaluator_v"+next).Evaluator
 
 show_tokens = False
 show_ast = False

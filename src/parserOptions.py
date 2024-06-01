@@ -1,32 +1,32 @@
-import tokens as token
+import tokens
 from parserNode import *
 
 
 UNARY_OPERATORS = [
-    token.TOKENTYPE.MINUS,
-    token.TOKENTYPE.BANG
+    tokens.TOKENTYPE.MINUS,
+    tokens.TOKENTYPE.BANG
 ]
 ORDER_OF_OPERATIONS: dict = {
-    token.TOKENTYPE.RANGE: ("LEFT",8), # Range operator has the highest precedence
-    token.TOKENTYPE.CARET: ("LEFT",7),
-    token.TOKENTYPE.CARET_EQUAL: ("LEFT",7),
-    token.TOKENTYPE.STAR: ("LEFT",6),
-    token.TOKENTYPE.SLASH: ("LEFT",6),
-    token.TOKENTYPE.SLASH_EQUAL: ("LEFT",6),
-    token.TOKENTYPE.PERCENT: ("LEFT",6),
-    token.TOKENTYPE.STAR_EQUAL: ("LEFT",6),
-    token.TOKENTYPE.PLUS: ("LEFT",5),
-    token.TOKENTYPE.PLUS_EQUAL: ("LEFT",5),
-    token.TOKENTYPE.MINUS: ("LEFT",5),
-    token.TOKENTYPE.MINUS_EQUAL: ("LEFT",5),
-    token.TOKENTYPE.GREATER: ("LEFT",4), # Comparisons
-    token.TOKENTYPE.LESS: ("LEFT",4),
-    token.TOKENTYPE.GREATER_EQUAL: ("LEFT",4),
-    token.TOKENTYPE.LESS_EQUAL: ("LEFT",4),
-    token.TOKENTYPE.EQUAL_EQUAL: ("LEFT",3), # Equality checks
-    token.TOKENTYPE.NOT_EQUAL: ("LEFT",3),
-    token.TOKENTYPE.AND: ("LEFT",2),
-    token.TOKENTYPE.OR: ("LEFT",1),  # Logical OR has the lowest precedence
+    tokens.TOKENTYPE.RANGE: ("LEFT",8), # Range operator has the highest precedence
+    tokens.TOKENTYPE.CARET: ("LEFT",7),
+    tokens.TOKENTYPE.CARET_EQUAL: ("LEFT",7),
+    tokens.TOKENTYPE.STAR: ("LEFT",6),
+    tokens.TOKENTYPE.SLASH: ("LEFT",6),
+    tokens.TOKENTYPE.SLASH_EQUAL: ("LEFT",6),
+    tokens.TOKENTYPE.PERCENT: ("LEFT",6),
+    tokens.TOKENTYPE.STAR_EQUAL: ("LEFT",6),
+    tokens.TOKENTYPE.PLUS: ("LEFT",5),
+    tokens.TOKENTYPE.PLUS_EQUAL: ("LEFT",5),
+    tokens.TOKENTYPE.MINUS: ("LEFT",5),
+    tokens.TOKENTYPE.MINUS_EQUAL: ("LEFT",5),
+    tokens.TOKENTYPE.GREATER: ("LEFT",4), # Comparisons
+    tokens.TOKENTYPE.LESS: ("LEFT",4),
+    tokens.TOKENTYPE.GREATER_EQUAL: ("LEFT",4),
+    tokens.TOKENTYPE.LESS_EQUAL: ("LEFT",4),
+    tokens.TOKENTYPE.EQUAL_EQUAL: ("LEFT",3), # Equality checks
+    tokens.TOKENTYPE.NOT_EQUAL: ("LEFT",3),
+    tokens.TOKENTYPE.AND: ("LEFT",2),
+    tokens.TOKENTYPE.OR: ("LEFT",1),  # Logical OR has the lowest precedence
 }
 LITERAL_TO_TYPE_MAP = {
     IntLiteral: IntType,
@@ -35,10 +35,10 @@ LITERAL_TO_TYPE_MAP = {
     StringLiteral: StringType,
 }
 DATA_TYPES_TO_LITERAL_MAP = {
-    token.TOKENTYPE.INT: IntLiteral,
-    token.TOKENTYPE.FLOAT: FloatLiteral,
-    token.TOKENTYPE.BOOL: BooleanLiteral,
-    token.TOKENTYPE.STRING: StringLiteral,
+    tokens.TOKENTYPE.INT: IntLiteral,
+    tokens.TOKENTYPE.FLOAT: FloatLiteral,
+    tokens.TOKENTYPE.BOOL: BooleanLiteral,
+    tokens.TOKENTYPE.STRING: StringLiteral,
 }
 
 TOKEN_TO_DATA_TYPE_MAP = {

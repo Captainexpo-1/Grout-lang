@@ -5,6 +5,14 @@ from langParser import Parser
 import std
 from parserOptions import *
 from builtinFunctions import BUILTIN_FUNCTIONS
+
+class List:
+    def __init__(self, items, length):
+        self.items = items
+        self.length = length
+    def __repr__(self):
+        return f"List({self.items}, {self.length})"
+
 class Struct:
     def __init__(self, env, name):
         self.env = env
@@ -360,7 +368,7 @@ class Evaluator:
             eb = node.else_body
             if isinstance(eb, ElifStatement):
                 self.visit_if_statement(eb, env)
-            elif isinstance(eb, ElseStatment):
+            elif isinstance(eb, ElseStatement):
                 for stmt in eb.body:
                     self.evaluate(stmt, env)
 
